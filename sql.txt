@@ -1,0 +1,63 @@
+-- =============================================================================
+-- SaaS Project Database Setup (FastAPI Edition)
+-- Database Name: saas_fastapi
+-- =============================================================================
+
+-- 1. Create fresh database
+CREATE DATABASE IF NOT EXISTS saas_fastapi;
+USE saas_fastapi;
+
+-- Optional: Create MySQL application user if you wish to use 'flaskuser'
+-- CREATE USER IF NOT EXISTS 'flaskuser'@'localhost' IDENTIFIED BY 'flaskpass';
+-- GRANT ALL PRIVILEGES ON saas_fastapi.* TO 'flaskuser'@'localhost';
+-- FLUSH PRIVILEGES;
+
+-- 2. Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(500) NOT NULL,
+    role ENUM('admin', 'customer') DEFAULT 'customer',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Plans Table
+CREATE TABLE IF NOT EXISTS plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    max_projects INT DEFAULT 10,
+    max_team_size INT DEFAULT 5,
+    target_user VARCHAR(50) DEFAULT 'personal',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. Subscriptions Table
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    plan_id INT NULL,  -- NULL represents Free / incomplete subscription
+    start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE SET NULL
+);
+
+-- 5. Insert Default Subscription Plans
+INSERT INTO plans (name, price, description, max_projects, max_team_size, target_user)
+VALUES
+('Free', 0.00, 'For personal use or evaluation', 10, 5, 'personal'),
+('Basic', 14.99, 'Ideal for small businesses', 50, 25, 'small'),
+('Pro', 24.99, 'Best for growing teams', 100, 50, 'mid'),
+('Premium', 49.99, 'For large organizations', 250, 100, 'large');
+
+-- 6. Insert Default Admin User
+-- Credentials: Username = admin | Password = admin123
+INSERT INTO users (username, email, password, role)
+VALUES (
+    'admin',
+    'admin@example.com',
+    'scrypt:32768:8:1$E6gywp5e6XxUISwE$d55b1b4631d150cd55a273a464f09f7d80f528108d16136affc4db1fcc34c0067fb2a9a016276b91887aa80fbaf71974c1c77443a6ff1f335070d615a470594d',
+    'admin'
+);

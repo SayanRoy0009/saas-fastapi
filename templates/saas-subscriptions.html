@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subscriptions</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/saas-dashboard.css') }}">
+</head>
+<body>
+<div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2><a href="/">MySaaS</a></h2>
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/customers">Customers</a></li>
+            <li><a href="/subscriptions">Subscriptions</a></li>
+            <li><a href="/plans">Plans</a></li>
+        </ul>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+            <div class="top-right">
+                <a href="/logout" class="logout-link">Logout</a>
+            </div>
+        <h1>Subscriptions Overview</h1>
+
+        <!-- Chart -->
+        <div class="chart-container">
+            <canvas id="subsChart"></canvas>
+            <script>
+    const ctx = document.getElementById('subsChart').getContext('2d');
+
+    // Fetch chart metrics from FastAPI REST API endpoint (visible in DevTools Network Fetch/XHR)
+    fetch('/api/subscriptions/chart')
+        .then(response => response.json())
+        .then(data => {
+            const months = data.months;
+            const planNames = data.plan_names;
+            const planData = data.plan_data;
+
+            const monthLabels = months.map(m => new Date(2021, m - 1).toLocaleString('default', { month: 'short' }));
+
+            const planColors = {
+                "Free": "#a0aec0",
+                "Basic": "#4299e1",
+                "Pro": "#38a169",
+                "Premium": "#d69e2e"
+            };
+
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            const datasets = planNames.map(plan => ({
+                label: plan,
+                data: planData[plan],
+                fill: false,
+                borderColor: planColors[plan] || getRandomColor(),
+                backgroundColor: planColors[plan] || getRandomColor(),
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: 'Monthly Subscriptions by Plan',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Count' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Month' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error("Error fetching subscription chart API:", err));
+</script>
+
+
+        </div>
+
+        <!-- <h2 style="margin-top: 30px;">Subscription Details</h2> -->
+<h2 style="margin-top: 30px;">Subscription Details</h2>
+
+<!-- Search + Filter Bar -->
+<div class="search-filter-bar">
+    <!-- Search -->
+    <form method="get" action="{{ url_for('subscriptions') }}" class="search-form">
+        <input type="text" name="search" placeholder="Search by name, email, plan..." value="{{ request.args.get('search', '') }}">
+        <button type="submit"><i class="fas fa-search"></i> Search</button>
+    </form>
+
+    <!-- Filter -->
+    <div class="filter-dropdown">
+        <button id="filterToggle" type="button">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        <div id="filterPanel" class="filter-panel" style="display: none;">
+            <form method="get" action="{{ url_for('subscriptions') }}">
+                <input type="hidden" name="search" value="{{ request.args.get('search', '') }}">
+
+                <label>Plan:</label>
+                <select name="plan">
+                    <option value="">All</option>
+                    {% for name in plan_names %}
+                        <option value="{{ name }}" {% if request.args.get('plan') == name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Joined Between:</label>
+                <input type="date" name="date_start" value="{{ request.args.get('date_start', '') }}">
+                <input type="date" name="date_end" value="{{ request.args.get('date_end', '') }}">
+
+                <div class="filter-buttons">
+                    <button type="submit" class="apply-btn">Apply</button>
+                    <a href="{{ url_for('subscriptions') }}" class="reset-btn">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Subscription Customer List -->
+<div class="customer-list" style="margin-top: 30px;">
+    <div class="customer-list-header">
+        <div>Plan</div>
+        <div>User</div>
+        <div>Email</div>
+        <div>Date</div>
+    </div>
+
+    <div id="subRows">
+    {% for d in details %}
+    <div class="customer-list-row">
+        <div>
+            <span class="subscription-badge {{ d.plan_name|lower if d.plan_name else 'free' }}">
+                {{ d.plan_name or 'Free' }}
+            </span>
+        </div>
+        <div>{{ d.username }}</div>
+        <div>{{ d.email }}</div>
+        <!-- <div>{{ d.start_date.strftime('%Y-%m-%d') }}</div> -->
+         <div>{{ d.start_date.strftime('%b %d, %Y') }}</div>
+
+    </div>
+    {% endfor %}
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="pagination-container">
+    <div class="page-info">
+        Showing page {{ current_page }} of {{ total_pages }}
+    </div>
+
+    <div class="pagination">
+        {% set base_args = request.args.to_dict(flat=True) %}
+
+        {% if current_page > 1 %}
+            {% set prev_args = base_args.copy() %}
+            {% set _ = prev_args.update({'page': current_page - 1}) %}
+            <a href="{{ url_for('subscriptions') }}?{{ prev_args|urlencode }}" title="Previous Page">&laquo;</a>
+        {% endif %}
+
+        {% set start_page = current_page - 2 %}
+        {% set end_page = current_page + 2 %}
+        {% if start_page < 1 %}
+            {% set end_page = end_page + (1 - start_page) %}
+            {% set start_page = 1 %}
+        {% endif %}
+        {% if end_page > total_pages %}
+            {% set start_page = start_page - (end_page - total_pages) %}
+            {% set end_page = total_pages %}
+        {% endif %}
+        {% if start_page < 1 %}
+            {% set start_page = 1 %}
+        {% endif %}
+
+        {% for i in range(start_page, end_page + 1) %}
+            {% set page_args = base_args.copy() %}
+            {% set _ = page_args.update({'page': i}) %}
+            {% if i == current_page %}
+                <span class="active">{{ i }}</span>
+            {% else %}
+                <a href="{{ url_for('subscriptions') }}?{{ page_args|urlencode }}">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if current_page < total_pages %}
+            {% set next_args = base_args.copy() %}
+            {% set _ = next_args.update({'page': current_page + 1}) %}
+            <a href="{{ url_for('subscriptions') }}?{{ next_args|urlencode }}" title="Next Page">&raquo;</a>
+        {% endif %}
+    </div>
+</div>
+
+
+<script>
+    const toggle = document.getElementById('filterToggle');
+    const panel = document.getElementById('filterPanel');
+    toggle.addEventListener('click', () => {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Client-side fetch for subscriptions table (visible in DevTools Fetch/XHR tab)
+    const subApiUrl = '/api/subscriptions' + (window.location.search || '?page=1');
+    fetch(subApiUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Subscriptions Table API:", data);
+            if (data && data.subscriptions && data.subscriptions.length > 0) {
+                const container = document.getElementById('subRows');
+                if (container) {
+                    container.innerHTML = data.subscriptions.map(s => {
+                        const dateFormatted = s.start_date ? new Date(s.start_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric'
+                        }) : '';
+                        const planName = s.plan_name || 'Free';
+                        const badgeClass = planName.toLowerCase();
+                        return `
+                        <div class="customer-list-row">
+                            <div>
+                                <span class="subscription-badge ${badgeClass}">
+                                    ${planName}
+                                </span>
+                            </div>
+                            <div>${s.username}</div>
+                            <div>${s.email}</div>
+                            <div>${dateFormatted}</div>
+                        </div>`;
+                    }).join('');
+                }
+            }
+        })
+        .catch(err => console.error("Error fetching subscriptions API:", err));
+</script>
+
+</body>
+</html>
+

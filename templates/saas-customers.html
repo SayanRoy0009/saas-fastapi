@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customers</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/saas-dashboard.css') }}">
+</head>
+<body>
+<div class="main-container">
+    <div class="sidebar">
+        <h2><a href="/">MySaaS</a></h2>
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/customers">Customers</a></li>
+            <li><a href="/subscriptions">Subscriptions</a></li>
+            <li><a href="/plans">Plans</a></li>
+        </ul>
+    </div>
+    <div class="content">
+        <div class="top-right">
+            <a href="/logout" class="logout-link">Logout</a>
+        </div>
+        <h1>Customers</h1>
+
+        <div class="search-filter-bar">
+            <form method="get" action="{{ url_for('customers') }}" class="search-form">
+                <input type="text" name="search" placeholder="Search by name, email, plan..." value="{{ request.args.get('search', '') }}">
+                <button type="submit"><i class="fas fa-search"></i> Search</button>
+            </form>
+
+            <div class="filter-dropdown">
+                <button id="filterToggle" type="button">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+                <div id="filterPanel" class="filter-panel" style="display: none;">
+                    <form method="get" action="{{ url_for('customers') }}">
+                        <input type="hidden" name="search" value="{{ request.args.get('search', '') }}">
+
+                        <label>Subscription:</label>
+                        <select name="subscription">
+                            <option value="">All</option>
+                            <option value="Free" {% if request.args.get('subscription') == 'Free' %}selected{% endif %}>Free</option>
+                            <option value="Basic" {% if request.args.get('subscription') == 'Basic' %}selected{% endif %}>Basic</option>
+                            <option value="Pro" {% if request.args.get('subscription') == 'Pro' %}selected{% endif %}>Pro</option>
+                            <option value="Premium" {% if request.args.get('subscription') == 'Premium' %}selected{% endif %}>Premium</option>
+                        </select>
+
+                        <label>Sort by Join Date:</label>
+                        <select name="sort">
+                            <option value="desc" {% if request.args.get('sort') == 'desc' %}selected{% endif %}>Newest First</option>
+                            <option value="asc" {% if request.args.get('sort') == 'asc' %}selected{% endif %}>Oldest First</option>
+                        </select>
+
+                        <label>Joined Between:</label>
+                        <input type="date" name="date_start" value="{{ request.args.get('date_start', '') }}">
+                        <input type="date" name="date_end" value="{{ request.args.get('date_end', '') }}">
+
+                        <div class="filter-buttons">
+                            <button type="submit" class="apply-btn">Apply</button>
+                            <a href="{{ url_for('customers') }}" class="reset-btn">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="customer-list">
+            <div class="customer-list-header">
+                <div>Name</div>
+                <div>Email</div>
+                <div>Subscription</div>
+                <div>Joined</div>
+            </div>
+            <div id="customerRows">
+            {% for u in customers %}
+            <div class="customer-list-row">
+                <div><strong>{{ u.username }}</strong></div>
+                <div style="color: #4a5568;">{{ u.email }}</div>
+                 <div>
+                    <span class="subscription-badge {{ u.subscription_type|lower }}">
+                        {{ u.subscription_type }}
+                    </span>
+                </div>
+                <div>{{ u.created_at.strftime('%b %d, %Y') }}</div>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+
+        <div class="pagination-container">
+            <div class="page-info">
+                Showing page {{ current_page }} of {{ total_pages }}
+            </div>
+
+            <div class="pagination">
+                {% set base_args = request.args.to_dict(flat=True) %}
+
+                {% if current_page > 1 %}
+                    {% set prev_args = base_args.copy() %}
+                    {% set _ = prev_args.update({'page': current_page - 1}) %}
+                    <a href="{{ url_for('customers') }}?{{ prev_args | urlencode }}" title="Previous Page">&laquo;</a>
+                {% endif %}
+
+                {% set start_page = current_page - 2 %}
+                {% set end_page = current_page + 2 %}
+                {% if start_page < 1 %}
+                    {% set end_page = end_page + (1 - start_page) %}
+                    {% set start_page = 1 %}
+                {% endif %}
+                {% if end_page > total_pages %}
+                    {% set start_page = start_page - (end_page - total_pages) %}
+                    {% set end_page = total_pages %}
+                {% endif %}
+                {% if start_page < 1 %}
+                    {% set start_page = 1 %}
+                {% endif %}
+
+                {% for i in range(start_page, end_page + 1) %}
+                    {% set page_args = base_args.copy() %}
+                    {% set _ = page_args.update({'page': i}) %}
+                    {% if i == current_page %}
+                        <span class="active">{{ i }}</span>
+                    {% else %}
+                        <a href="{{ url_for('customers') }}?{{ page_args | urlencode }}">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if current_page < total_pages %}
+                    {% set next_args = base_args.copy() %}
+                    {% set _ = next_args.update({'page': current_page + 1}) %}
+                    <a href="{{ url_for('customers') }}?{{ next_args | urlencode }}" title="Next Page">&raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const toggle = document.getElementById('filterToggle');
+    const panel = document.getElementById('filterPanel');
+    toggle.addEventListener('click', () => {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Client-side fetch to /api/customers (visible in DevTools Fetch/XHR tab)
+    const apiUrl = '/api/customers' + (window.location.search || '?page=1');
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Customer API Response:", data);
+            if (data && data.customers && data.customers.length > 0) {
+                const container = document.getElementById('customerRows');
+                if (container) {
+                    container.innerHTML = data.customers.map(c => {
+                        const dateFormatted = c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric'
+                        }) : '';
+                        const badgeClass = (c.subscription_type || 'free').toLowerCase();
+                        return `
+                        <div class="customer-list-row">
+                            <div><strong>${c.username}</strong></div>
+                            <div style="color: #4a5568;">${c.email}</div>
+                            <div>
+                                <span class="subscription-badge ${badgeClass}">
+                                    ${c.subscription_type}
+                                </span>
+                            </div>
+                            <div>${dateFormatted}</div>
+                        </div>`;
+                    }).join('');
+                }
+            }
+        })
+        .catch(err => console.error("Error fetching customers API:", err));
+</script>
+
+</body>
+</html>

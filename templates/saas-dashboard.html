@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/saas-dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2 class="site-title"><a href="/">MySaaS</a></h2>
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/customers">Customers</a></li>
+            <li><a href="/subscriptions">Subscriptions</a></li>
+            <li><a href="/plans">Plans</a></li>
+        </ul>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+            <!-- Logout Link -->
+            <div class="top-right">
+              <a href="/logout" class="logout-link">Logout</a>
+            </div>
+
+        <h1>Dashboard</h1>
+
+        <!-- Metric Cards -->
+        <div class="card-grid">
+            <div class="card">Active Subscriptions<br><span>{{ active_subs }}</span></div>
+            <div class="card">Incomplete Subscriptions<br><span>{{ incomplete_subs }}</span></div>
+            <div class="card">Total Customers<br><span>{{ total_customers }}</span></div>
+            <div class="card">Total Plans<br><span>{{ total_plans }}</span></div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+            <canvas id="customerChart"></canvas>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Fetch live chart analytics from FastAPI REST API (visible in DevTools Fetch/XHR)
+    fetch('/api/dashboard')
+        .then(response => response.json())
+        .then(data => {
+            const rawUserData = data.user_data;
+            const rawSubData = data.sub_data;
+
+            const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+            const userMap = {};
+            rawUserData.forEach(d => userMap[d.month] = d.user_count);
+
+            const subMap = {};
+            rawSubData.forEach(d => subMap[d.month] = d.subscription_count);
+
+            const userCounts = months.map(m => userMap[m] !== undefined ? userMap[m] : null);
+            const subCounts = months.map(m => subMap[m] !== undefined ? subMap[m] : null);
+
+            const ctx = document.getElementById('customerChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months.map(m => `Month ${m}`),
+                    datasets: [
+                        {
+                            label: 'New Customers',
+                            data: userCounts,
+                            borderColor: 'blue',
+                            fill: false,
+                            spanGaps: false
+                        },
+                        {
+                            label: 'Subscriptions Sold',
+                            data: subCounts,
+                            borderColor: 'green',
+                            fill: false,
+                            spanGaps: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error("Error loading dashboard API:", err));
+</script>
+</body>
+</html>
+

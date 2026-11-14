@@ -1,0 +1,93 @@
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* background: linear-gradient(to right, #667eea, #1ddff8); */
+    background : linear-gradient(to right, #2d3748, #50535a);
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-container {
+    text-align: center;
+}
+
+
+.login-text {
+    color: #fff;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.login-text{
+    font-weight: bolder;
+    /* font-size: 50px; */
+}
+.form-box {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+    width: 320px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444;
+}
+
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+
+input[type="submit"] {
+    width: 100%;
+    background-color: #667eea;
+    color: white;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+input[type="submit"]:hover {
+    background-color: #5a67d8;
+}
+
+
+.register-text {
+    margin-top: 20px;
+    color: #fff;
+    font-size: 15px;
+}
+
+
+a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+a:hover {
+    text-decoration: none;
+}
