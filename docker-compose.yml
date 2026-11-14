@@ -1,0 +1,40 @@
+services:
+  # MySQL Database Container
+  db:
+    image: mysql:8.0
+    container_name: saas_fastapi_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: saas_fastapi
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      # Automatically initialize database schema and admin account on first startup
+      - ./sql.txt:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # FastAPI Web Application Container
+  web:
+    build: .
+    container_name: saas_fastapi_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=password
+      - DB_NAME=saas_fastapi
+      - SECRET_KEY=fastapi-saas-super-secret-key-docker-12345
+
+volumes:
+  db_data:
