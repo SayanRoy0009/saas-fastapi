@@ -1,92 +1,83 @@
-# SaaS Admin Portal (FastAPI Edition)
-
-FastAPI conversion of the SaaS Admin & Subscription Management system.
-
+# SaaS Admin Portal 
 ---
 
 ## 🚀 Features
 - **FastAPI Backend**: High-performance asynchronous REST and HTML routes.
-- **Dedicated Database**: `saas_fastapi` (completely isolated from the Flask project).
 - **Session Authentication**: Role-based access control with secure cookie sessions.
 - **Admin Dashboard**: Live metrics for customers, subscriptions, and plans with Chart.js visualizations.
 - **Plan Management**: Create, edit, and delete subscription tiers with custom quotas.
 - **Customer Directory**: Search, filter by plan, date-range filters, and pagination.
 - **Subscription Analytics**: Filterable subscription listings and 12-month visual growth trend charts.
-- **100% Password Hash Compatible**: Uses `werkzeug.security` with pre-configured admin account.
+- **100% Password Hash Compatible**: Uses `werkzeug.security` so existing passwords from your Flask database work immediately.
 
 ---
 
-## 🛠️ Step-by-Step Setup
+## 🛠️ Prerequisites & Setup
 
-### 1. Open the Project in VS Code
-Open VS Code, choose **File > Open Folder...**, and select:
+### 1. Open the project in VS Code
+Open VS Code and choose **File > Open Folder...** and select:
 ```
-D:\Study\Project\saas-fastapi
+Project\saas-fastapi
 ```
 
-### 2. Set Up a Virtual Environment & Install Dependencies
-In the VS Code terminal (`Ctrl + ~`):
+### 2. Set Up a Virtual Environment (Recommended)
+Open a terminal in VS Code (`Ctrl + ~`) and run:
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
+```
+
+*(If script execution is disabled on your system, run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process` first)*
+
+### 3. Install Dependencies
+Install all required packages from `requirements.txt`:
+```powershell
 pip install -r requirements.txt
 ```
 
-### 3. Initialize the Fresh Database (`saas_fastapi`)
+### 4. Database Setup (MySQL)
+Ensure your MySQL server is running.
+If you already set up the `saas_project` database for the Flask project, you can use it directly!
 
-You have two easy ways to initialize the database:
-
-#### Option A: Automated Setup Script (Recommended)
-Run:
-```powershell
-python init_db.py
+If setting up fresh, run the commands in `sql.txt`:
+```sql
+CREATE DATABASE saas_project;
+USE saas_project;
+CREATE USER 'flaskuser'@'localhost' IDENTIFIED BY 'flaskpass';
+GRANT ALL PRIVILEGES ON saas_project.* TO 'flaskuser'@'localhost';
 ```
-This script will:
-1. Connect to your MySQL server (prompting for host/user/password if needed).
-2. Create the fresh database: `saas_fastapi`.
-3. Create all tables (`users`, `plans`, `subscriptions`).
-4. Insert the 4 default subscription tiers (`Free`, `Basic`, `Pro`, `Premium`).
-5. Create the default **admin** user account:
-   - **Username**: `admin`
-   - **Password**: `admin123`
-6. Save your database settings into `.env` automatically.
+Execute the table creation queries in `sql.txt`.
 
-#### Option B: Run SQL Directly in MySQL Workbench or CLI
-You can execute the queries inside [`sql.txt`](sql.txt).
-
----
-
-### 4. (Optional) Populate Mock Customers & Subscriptions
-To generate 50 mock customer accounts and subscriptions over the past 6 months to populate the dashboard charts:
+*(Optional)* To populate mock data for charts and customers:
 ```powershell
 python seed_data.py
 ```
 
 ---
 
-## ▶️ Running the Application
+## ▶️ How to Run
 
-### Option 1: Python Runner Script
+### Method 1: Python Runner
 ```powershell
 python run.py
 ```
 
-### Option 2: Uvicorn Direct
+### Method 2: Uvicorn Directly
 ```powershell
 uvicorn main:app --reload
 ```
 
-### Option 3: VS Code Debugger (F5)
-1. Open the Run and Debug tab (`Ctrl + Shift + D`).
-2. Select **FastAPI: Run SaaS Project**.
-3. Press **F5**.
+### Method 3: VS Code Run & Debug
+1. Press `Ctrl + Shift + D` (or click the Run & Debug icon on the sidebar).
+2. Select **"FastAPI: Run SaaS Project"**.
+3. Press `F5` to start debugging.
 
 ---
 
 ## 🌐 Accessing the Application
-- **Main Portal**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- **Admin Credentials**:
-  - **Username**: `admin`
-  - **Password**: `admin123`
-- **Interactive Swagger Docs**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+Once running, open your browser:
+- Application URL: **http://127.0.0.1:8000**
+- Interactive Swagger API Docs: **http://127.0.0.1:8000/docs**
+- ReDoc Docs: **http://127.0.0.1:8000/redoc**
+
+Login with your admin account (`username: admin`) to access the dashboard at `/dashboard`.
