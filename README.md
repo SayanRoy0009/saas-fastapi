@@ -1,6 +1,5 @@
-# SaaS Admin Portal (FastAPI Edition)
-
-FastAPI conversion of the SaaS Admin & Subscription Management system.
+# SaaS Admin Portal
+SaaS Admin & Subscription Management system.
 
 ---
 
